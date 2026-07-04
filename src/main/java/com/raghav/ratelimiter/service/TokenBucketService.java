@@ -20,7 +20,11 @@ public class TokenBucketService {
             throw new ClientAlreadyExistsException("Client already exists");
         }
 
-        Bucket bucket = new Bucket(clientId, capacity, refillRate);
+        Bucket bucket = new Bucket(
+                clientId,
+                capacity,
+                refillRate
+        );
 
         buckets.put(clientId, bucket);
     }
@@ -29,8 +33,9 @@ public class TokenBucketService {
 
         Bucket bucket = buckets.get(clientId);
 
-        if (bucket == null)
+        if (bucket == null) {
             return false;
+        }
 
         refillTokens(bucket);
 
@@ -54,8 +59,9 @@ public class TokenBucketService {
 
         long elapsedSeconds = elapsedTime / 1000;
 
-        if (elapsedSeconds <= 0)
+        if (elapsedSeconds <= 0) {
             return;
+        }
 
         long newTokens = elapsedSeconds * bucket.getRefillRate();
 
