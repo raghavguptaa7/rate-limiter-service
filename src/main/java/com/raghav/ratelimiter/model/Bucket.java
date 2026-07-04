@@ -18,8 +18,14 @@ public class Bucket {
     public Bucket(String clientId, long capacity, long refillRate) {
         this.clientId = clientId;
         this.capacity = capacity;
-        this.tokens = capacity; // Start with a full bucket
+        this.tokens = capacity;
         this.refillRate = refillRate;
         this.lastRefillTime = System.currentTimeMillis();
+    }
+
+    public void consumeToken() {
+        if (tokens > 0) {
+            tokens--;
+        }
     }
 }
