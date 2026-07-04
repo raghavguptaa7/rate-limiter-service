@@ -4,13 +4,13 @@ import com.raghav.ratelimiter.exception.ClientAlreadyExistsException;
 import com.raghav.ratelimiter.model.Bucket;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class TokenBucketService {
 
-    private final Map<String, Bucket> buckets = new HashMap<>();
+    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
     public void registerClient(String clientId,
                                long capacity,
@@ -37,14 +37,27 @@ public class TokenBucketService {
             return false;
         }
 
-        refillTokens(bucket);
+        bucket.getLock().lock();
 
-        if (bucket.getTokens() > 0) {
-            bucket.consumeToken();
-            return true;
+        try {
+
+            refillTokens(bucket);
+
+            if (bucket.getTokens() > 0) {
+
+                bucket.consumeToken();
+
+                return true;
+            }
+
+            return false;
+
+        } finally {
+
+            bucket.getLock().unlock();
+
         }
 
-        return false;
     }
 
     public Bucket getBucket(String clientId) {

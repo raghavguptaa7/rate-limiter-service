@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,7 +17,12 @@ public class Bucket {
     private long refillRate;
     private long lastRefillTime;
 
-    public Bucket(String clientId, long capacity, long refillRate) {
+    private final ReentrantLock lock = new ReentrantLock();
+
+    public Bucket(String clientId,
+                  long capacity,
+                  long refillRate) {
+
         this.clientId = clientId;
         this.capacity = capacity;
         this.tokens = capacity;
@@ -27,5 +34,9 @@ public class Bucket {
         if (tokens > 0) {
             tokens--;
         }
+    }
+
+    public ReentrantLock getLock() {
+        return lock;
     }
 }
