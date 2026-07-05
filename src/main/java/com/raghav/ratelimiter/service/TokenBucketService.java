@@ -2,21 +2,23 @@ package com.raghav.ratelimiter.service;
 
 import com.raghav.ratelimiter.exception.ClientAlreadyExistsException;
 import com.raghav.ratelimiter.model.Bucket;
+import com.raghav.ratelimiter.repository.BucketRepository;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class TokenBucketService {
 
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final BucketRepository repository;
+
+    public TokenBucketService(BucketRepository repository) {
+        this.repository = repository;
+    }
 
     public void registerClient(String clientId,
                                long capacity,
                                long refillRate) {
 
-        if (buckets.containsKey(clientId)) {
+        if (repository.exists(clientId)) {
             throw new ClientAlreadyExistsException("Client already exists");
         }
 
@@ -26,12 +28,12 @@ public class TokenBucketService {
                 refillRate
         );
 
-        buckets.put(clientId, bucket);
+        repository.save(bucket);
     }
 
     public boolean allowRequest(String clientId) {
 
-        Bucket bucket = buckets.get(clientId);
+        Bucket bucket = repository.findByClientId(clientId);
 
         if (bucket == null) {
             return false;
@@ -44,24 +46,19 @@ public class TokenBucketService {
             refillTokens(bucket);
 
             if (bucket.getTokens() > 0) {
-
                 bucket.consumeToken();
-
                 return true;
             }
 
             return false;
 
         } finally {
-
             bucket.getLock().unlock();
-
         }
-
     }
 
     public Bucket getBucket(String clientId) {
-        return buckets.get(clientId);
+        return repository.findByClientId(clientId);
     }
 
     private void refillTokens(Bucket bucket) {
@@ -89,5 +86,4 @@ public class TokenBucketService {
                 bucket.getLastRefillTime() + elapsedSeconds * 1000
         );
     }
-
 }
