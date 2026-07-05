@@ -1,0 +1,58 @@
+package com.raghav.ratelimiter.repository;
+
+import com.raghav.ratelimiter.model.Bucket;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Repository;
+
+import java.util.Map;
+
+@Repository
+public class RedisBucketRepository {
+
+    private final StringRedisTemplate redisTemplate;
+
+    public RedisBucketRepository(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
+    private String getKey(String clientId) {
+        return "bucket:" + clientId;
+    }
+
+    public void save(Bucket bucket) {
+
+        String key = getKey(bucket.getClientId());
+
+        redisTemplate.opsForHash().put(key, "clientId", bucket.getClientId());
+        redisTemplate.opsForHash().put(key, "capacity", String.valueOf(bucket.getCapacity()));
+        redisTemplate.opsForHash().put(key, "tokens", String.valueOf(bucket.getTokens()));
+        redisTemplate.opsForHash().put(key, "refillRate", String.valueOf(bucket.getRefillRate()));
+        redisTemplate.opsForHash().put(key, "lastRefillTime", String.valueOf(bucket.getLastRefillTime()));
+    }
+
+    public Bucket findByClientId(String clientId) {
+
+        String key = getKey(clientId);
+
+        Map<Object, Object> values =
+                redisTemplate.opsForHash().entries(key);
+
+        if (values.isEmpty()) {
+            return null;
+        }
+
+        Bucket bucket = new Bucket();
+
+        bucket.setClientId(clientId);
+        bucket.setCapacity(Long.parseLong(values.get("capacity").toString()));
+        bucket.setTokens(Long.parseLong(values.get("tokens").toString()));
+        bucket.setRefillRate(Long.parseLong(values.get("refillRate").toString()));
+        bucket.setLastRefillTime(Long.parseLong(values.get("lastRefillTime").toString()));
+
+        return bucket;
+    }
+
+    public void delete(String clientId) {
+        redisTemplate.delete(getKey(clientId));
+    }
+}
