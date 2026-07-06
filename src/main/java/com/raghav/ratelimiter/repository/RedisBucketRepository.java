@@ -1,13 +1,15 @@
 package com.raghav.ratelimiter.repository;
 
 import com.raghav.ratelimiter.model.Bucket;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.Map;
 
 @Repository
-public class RedisBucketRepository {
+@Primary
+public class RedisBucketRepository implements BucketRepository {
 
     private final StringRedisTemplate redisTemplate;
 
@@ -19,6 +21,7 @@ public class RedisBucketRepository {
         return "bucket:" + clientId;
     }
 
+    @Override
     public void save(Bucket bucket) {
 
         String key = getKey(bucket.getClientId());
@@ -30,12 +33,12 @@ public class RedisBucketRepository {
         redisTemplate.opsForHash().put(key, "lastRefillTime", String.valueOf(bucket.getLastRefillTime()));
     }
 
+    @Override
     public Bucket findByClientId(String clientId) {
 
         String key = getKey(clientId);
 
-        Map<Object, Object> values =
-                redisTemplate.opsForHash().entries(key);
+        Map<Object, Object> values = redisTemplate.opsForHash().entries(key);
 
         if (values.isEmpty()) {
             return null;
@@ -50,6 +53,13 @@ public class RedisBucketRepository {
         bucket.setLastRefillTime(Long.parseLong(values.get("lastRefillTime").toString()));
 
         return bucket;
+    }
+
+    @Override
+    public boolean exists(String clientId) {
+        return Boolean.TRUE.equals(
+                redisTemplate.hasKey(getKey(clientId))
+        );
     }
 
     public void delete(String clientId) {

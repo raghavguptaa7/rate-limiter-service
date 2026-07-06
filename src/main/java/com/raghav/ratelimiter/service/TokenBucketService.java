@@ -36,8 +36,12 @@ public class TokenBucketService {
         Bucket bucket = repository.findByClientId(clientId);
 
         if (bucket == null) {
+            System.out.println("Bucket not found");
             return false;
         }
+
+        System.out.println("===========================");
+        System.out.println("Loaded from Redis : " + bucket.getTokens());
 
         bucket.getLock().lock();
 
@@ -45,15 +49,29 @@ public class TokenBucketService {
 
             refillTokens(bucket);
 
+            System.out.println("After refill : " + bucket.getTokens());
+
             if (bucket.getTokens() > 0) {
+
                 bucket.consumeToken();
+
+                System.out.println("After consume : " + bucket.getTokens());
+
+                repository.save(bucket);
+
+                System.out.println("Saved to Redis : " + bucket.getTokens());
+
                 return true;
             }
+
+            repository.save(bucket);
 
             return false;
 
         } finally {
+
             bucket.getLock().unlock();
+
         }
     }
 
@@ -85,5 +103,7 @@ public class TokenBucketService {
         bucket.setLastRefillTime(
                 bucket.getLastRefillTime() + elapsedSeconds * 1000
         );
+
+        repository.save(bucket);
     }
 }
