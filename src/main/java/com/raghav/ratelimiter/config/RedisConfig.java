@@ -2,16 +2,26 @@ package com.raghav.ratelimiter.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 @Configuration
 public class RedisConfig {
 
     @Bean
-    public StringRedisTemplate redisTemplate(
-            RedisConnectionFactory connectionFactory) {
+    public DefaultRedisScript<Long> tokenBucketScript() {
 
-        return new StringRedisTemplate(connectionFactory);
+        DefaultRedisScript<Long> script =
+                new DefaultRedisScript<>();
+
+        script.setLocation(
+                new ClassPathResource(
+                        "scripts/tokenBucket.lua"
+                )
+        );
+
+        script.setResultType(Long.class);
+
+        return script;
     }
 }

@@ -1,20 +1,25 @@
 package com.raghav.ratelimiter.repository;
 
 import com.raghav.ratelimiter.model.Bucket;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Map;
 
 @Repository
-@Primary
 public class RedisBucketRepository implements BucketRepository {
 
     private final StringRedisTemplate redisTemplate;
+    private final DefaultRedisScript<Long> tokenBucketScript;
 
-    public RedisBucketRepository(StringRedisTemplate redisTemplate) {
+    public RedisBucketRepository(
+            StringRedisTemplate redisTemplate,
+            DefaultRedisScript<Long> tokenBucketScript) {
+
         this.redisTemplate = redisTemplate;
+        this.tokenBucketScript = tokenBucketScript;
     }
 
     private String getKey(String clientId) {
@@ -57,12 +62,22 @@ public class RedisBucketRepository implements BucketRepository {
 
     @Override
     public boolean exists(String clientId) {
-        return Boolean.TRUE.equals(
-                redisTemplate.hasKey(getKey(clientId))
-        );
+        return Boolean.TRUE.equals(redisTemplate.hasKey(getKey(clientId)));
     }
 
+    @Override
     public void delete(String clientId) {
         redisTemplate.delete(getKey(clientId));
+    }
+
+    public boolean allowRequestLua(String clientId) {
+
+        Long result = redisTemplate.execute(
+                tokenBucketScript,
+                List.of(getKey(clientId)),
+                String.valueOf(System.currentTimeMillis())
+        );
+
+        return result != null && result >= 0;
     }
 }

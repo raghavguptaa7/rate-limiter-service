@@ -4,10 +4,11 @@ import com.raghav.ratelimiter.model.Bucket;
 
 public interface BucketRepository {
 
-    Bucket findByClientId(String clientId);
-
     void save(Bucket bucket);
+
+    Bucket findByClientId(String clientId);
 
     boolean exists(String clientId);
 
+    void delete(String clientId);
 }
