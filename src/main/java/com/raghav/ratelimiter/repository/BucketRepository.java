@@ -11,4 +11,6 @@ public interface BucketRepository {
     boolean exists(String clientId);
 
     void delete(String clientId);
+
+    Long allowRequestLua(String clientId);
 }

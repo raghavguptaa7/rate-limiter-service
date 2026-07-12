@@ -70,14 +70,13 @@ public class RedisBucketRepository implements BucketRepository {
         redisTemplate.delete(getKey(clientId));
     }
 
-    public boolean allowRequestLua(String clientId) {
+    @Override
+    public Long allowRequestLua(String clientId) {
 
-        Long result = redisTemplate.execute(
+        return redisTemplate.execute(
                 tokenBucketScript,
                 List.of(getKey(clientId)),
                 String.valueOf(System.currentTimeMillis())
         );
-
-        return result != null && result >= 0;
     }
 }

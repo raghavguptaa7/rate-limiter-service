@@ -1,42 +1,40 @@
-local tokens = tonumber(redis.call('HGET', KEYS[1], 'tokens'))
-local capacity = tonumber(redis.call('HGET', KEYS[1], 'capacity'))
-local refillRate = tonumber(redis.call('HGET', KEYS[1], 'refillRate'))
-local lastRefillTime = tonumber(redis.call('HGET', KEYS[1], 'lastRefillTime'))
-
-if tokens == nil then
-    return -1
-end
+local key = KEYS[1]
 
 local currentTime = tonumber(ARGV[1])
 
-local elapsed = math.floor((currentTime - lastRefillTime) / 1000)
+local capacity = tonumber(redis.call('HGET', key, 'capacity'))
+local tokens = tonumber(redis.call('HGET', key, 'tokens'))
+local refillRate = tonumber(redis.call('HGET', key, 'refillRate'))
+local lastRefillTime = tonumber(redis.call('HGET', key, 'lastRefillTime'))
 
-if elapsed > 0 then
+if capacity == nil then
+    return -1
+end
 
-    tokens = math.min(
-        capacity,
-        tokens + elapsed * refillRate
-    )
+local elapsedSeconds = math.floor((currentTime - lastRefillTime) / 1000)
 
-    lastRefillTime =
-        lastRefillTime + elapsed * 1000
+if elapsedSeconds > 0 then
+
+    local newTokens = elapsedSeconds * refillRate
+
+    tokens = math.min(capacity, tokens + newTokens)
+
+    lastRefillTime = lastRefillTime + elapsedSeconds * 1000
 
 end
 
 if tokens <= 0 then
 
-    redis.call('HSET', KEYS[1],
-        'tokens', tokens,
-        'lastRefillTime', lastRefillTime)
+    redis.call('HSET', key, 'tokens', tokens)
+    redis.call('HSET', key, 'lastRefillTime', lastRefillTime)
 
-    return 0
+    return -2
 
 end
 
 tokens = tokens - 1
 
-redis.call('HSET', KEYS[1],
-    'tokens', tokens,
-    'lastRefillTime', lastRefillTime)
+redis.call('HSET', key, 'tokens', tokens)
+redis.call('HSET', key, 'lastRefillTime', lastRefillTime)
 
 return tokens

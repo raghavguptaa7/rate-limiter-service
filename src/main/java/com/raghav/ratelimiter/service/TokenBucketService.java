@@ -1,17 +1,22 @@
 package com.raghav.ratelimiter.service;
 
 import com.raghav.ratelimiter.exception.ClientAlreadyExistsException;
+import com.raghav.ratelimiter.metrics.RateLimiterMetrics;
 import com.raghav.ratelimiter.model.Bucket;
 import com.raghav.ratelimiter.repository.BucketRepository;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TokenBucketService {
 
     private final BucketRepository repository;
+    private final RateLimiterMetrics metrics;
 
-    public TokenBucketService(BucketRepository repository) {
+    public TokenBucketService(BucketRepository repository,
+                              RateLimiterMetrics metrics) {
         this.repository = repository;
+        this.metrics = metrics;
     }
 
     public void registerClient(String clientId,
@@ -33,77 +38,45 @@ public class TokenBucketService {
 
     public boolean allowRequest(String clientId) {
 
-        Bucket bucket = repository.findByClientId(clientId);
+        metrics.incrementTotalRequests();
 
-        if (bucket == null) {
-            System.out.println("Bucket not found");
+        Timer.Sample sample = Timer.start();
+
+        Long result = repository.allowRequestLua(clientId);
+
+        if (result == null) {
+
+            metrics.incrementBlockedRequests();
+            sample.stop(metrics.getRequestTimer());
+
             return false;
         }
 
-        System.out.println("===========================");
-        System.out.println("Loaded from Redis : " + bucket.getTokens());
+        if (result == -1) {
 
-        bucket.getLock().lock();
-
-        try {
-
-            refillTokens(bucket);
-
-            System.out.println("After refill : " + bucket.getTokens());
-
-            if (bucket.getTokens() > 0) {
-
-                bucket.consumeToken();
-
-                System.out.println("After consume : " + bucket.getTokens());
-
-                repository.save(bucket);
-
-                System.out.println("Saved to Redis : " + bucket.getTokens());
-
-                return true;
-            }
-
-            repository.save(bucket);
+            metrics.incrementBlockedRequests();
+            sample.stop(metrics.getRequestTimer());
 
             return false;
-
-        } finally {
-
-            bucket.getLock().unlock();
-
         }
+
+        if (result == -2) {
+
+            metrics.incrementBlockedRequests();
+            sample.stop(metrics.getRequestTimer());
+
+            return false;
+        }
+
+        metrics.incrementAllowedRequests();
+        sample.stop(metrics.getRequestTimer());
+
+        return true;
     }
 
     public Bucket getBucket(String clientId) {
+
         return repository.findByClientId(clientId);
-    }
 
-    private void refillTokens(Bucket bucket) {
-
-        long currentTime = System.currentTimeMillis();
-
-        long elapsedTime = currentTime - bucket.getLastRefillTime();
-
-        long elapsedSeconds = elapsedTime / 1000;
-
-        if (elapsedSeconds <= 0) {
-            return;
-        }
-
-        long newTokens = elapsedSeconds * bucket.getRefillRate();
-
-        bucket.setTokens(
-                Math.min(
-                        bucket.getCapacity(),
-                        bucket.getTokens() + newTokens
-                )
-        );
-
-        bucket.setLastRefillTime(
-                bucket.getLastRefillTime() + elapsedSeconds * 1000
-        );
-
-        repository.save(bucket);
     }
 }
