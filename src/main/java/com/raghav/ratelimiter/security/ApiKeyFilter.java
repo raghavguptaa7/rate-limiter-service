@@ -36,8 +36,13 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
         String apiKey = request.getHeader("X-API-KEY");
 
-        if (API_KEY.equals(apiKey)) {
+        System.out.println("========== API KEY DEBUG ==========");
+        System.out.println("Path: " + request.getRequestURI());
+        System.out.println("Received API Key: " + apiKey);
+        System.out.println("Expected API Key: " + API_KEY);
+        System.out.println("===================================");
 
+        if (API_KEY.equals(apiKey)) {
             filterChain.doFilter(request, response);
             return;
         }
