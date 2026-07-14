@@ -386,7 +386,7 @@ k6 run load-test.js
 **Raghav Gupta**
 
 - GitHub: https://github.com/raghavguptaa7
-- LinkedIn: *(Add your LinkedIn profile here)*
+- LinkedIn: https://www.linkedin.com/in/raghav-gupta-388a25283
 
 ---
 
