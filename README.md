@@ -380,7 +380,19 @@ k6 run load-test.js
 - AWS Deployment
 
 ---
+## 🌐 Live Demo
 
+**Application**
+
+https://rate-limiter-service-2q4j.onrender.com
+
+**Swagger UI**
+
+https://rate-limiter-service-2q4j.onrender.com/swagger-ui/index.html
+
+**Health Check**
+
+https://rate-limiter-service-2q4j.onrender.com/actuator/health
 # 👨‍💻 Author
 
 **Raghav Gupta**
