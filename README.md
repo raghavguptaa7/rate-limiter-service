@@ -331,13 +331,39 @@ k6 run load-test.js
 
 # 📸 Screenshots
 
-Add screenshots here:
+## 🏗 Architecture
 
-- Swagger UI
-- Grafana Dashboard
-- Prometheus Targets
-- GitHub Actions
-- k6 Load Test Results
+![Architecture](docs/architecture.png)
+
+---
+
+## 📚 Swagger UI
+
+### Home
+
+![Swagger Home](docs/swagger-home.png)
+
+### API Endpoints
+
+![Swagger API](docs/swagger-api.png)
+
+---
+
+## 📊 Prometheus Targets
+
+![Prometheus](docs/prometheus-targets.png)
+
+---
+
+## ⚙ GitHub Actions
+
+![GitHub Actions](docs/github-actions.png)
+
+---
+
+## 🚀 k6 Load Testing
+
+![k6 Results](docs/k6-results.png)
 
 ---
 
